@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map-OS — Painel Web & Supabase</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Topbar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-orange-600 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-600/30">
+          <i data-lucide="wrench" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-lg text-white">Map-OS</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-400 border border-orange-500/20 font-medium">v5.3.0 Web</span>
+          </div>
+          <p class="text-xs text-slate-400">Sistema de Controle de Ordens de Serviço</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <!-- Supabase Status Badge -->
+        <div id="supa-badge" class="flex items-center space-x-2 text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="supa-badge-text">Supabase Conectado</span>
+        </div>
+
+        <button onclick="toggleConfigModal()" class="flex items-center space-x-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg border border-slate-700 transition">
+          <i data-lucide="database" class="w-4 h-4 text-orange-400"></i>
+          <span>Configurar Supabase</span>
+        </button>
+
+        <div class="h-6 w-px bg-slate-800"></div>
+
+        <!-- User Profile -->
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-300">
+            FM
+          </div>
+          <div class="hidden sm:block text-left text-xs">
+            <div class="font-semibold text-slate-200">Felipe Monteiro</div>
+            <div class="text-slate-400">felipe01sigma@gmail.com</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- Overview Banner -->
+    <div class="bg-gradient-to-r from-orange-950/40 via-slate-900 to-slate-900 p-6 rounded-2xl border border-orange-900/20 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="space-y-1">
+        <h1 class="text-2xl font-bold text-white flex items-center gap-2">
+          Painel de Ordens de Serviço
+          <span class="text-xs bg-slate-800 text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-700 font-normal">GitHub Pages + Supabase</span>
+        </h1>
+        <p class="text-sm text-slate-400 max-w-2xl">
+          Visualização do Map-OS com suporte para backend no Supabase (PostgreSQL). Dados sincronizados e gerenciados via API.
+        </p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button onclick="carregarDados()" class="flex items-center space-x-2 bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-orange-600/30 transition">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          <span>Atualizar Dados</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-slate-900 p-5 rounded-xl border border-slate-800/80 space-y-2">
+        <div class="flex items-center justify-between text-slate-400">
+          <span class="text-xs font-medium uppercase tracking-wider">Total de O.S.</span>
+          <i data-lucide="file-text" class="w-4 h-4 text-orange-400"></i>
+        </div>
+        <div id="kpi-os-total" class="text-2xl font-bold text-white">4</div>
+        <div class="text-xs text-slate-400 flex items-center gap-1">
+          <span class="text-emerald-400 font-medium">+100%</span> vs. mês anterior
+        </div>
+      </div>
+
+      <div class="bg-slate-900 p-5 rounded-xl border border-slate-800/80 space-y-2">
+        <div class="flex items-center justify-between text-slate-400">
+          <span class="text-xs font-medium uppercase tracking-wider">O.S. Abertas</span>
+          <i data-lucide="clock" class="w-4 h-4 text-amber-400"></i>
+        </div>
+        <div id="kpi-os-abertas" class="text-2xl font-bold text-amber-400">2</div>
+        <div class="text-xs text-slate-400">Aguardando atendimento técnico</div>
+      </div>
+
+      <div class="bg-slate-900 p-5 rounded-xl border border-slate-800/80 space-y-2">
+        <div class="flex items-center justify-between text-slate-400">
+          <span class="text-xs font-medium uppercase tracking-wider">Clientes Cadastrados</span>
+          <i data-lucide="users" class="w-4 h-4 text-cyan-400"></i>
+        </div>
+        <div id="kpi-clientes" class="text-2xl font-bold text-white">3</div>
+        <div class="text-xs text-slate-400">Base sincronizada</div>
+      </div>
+
+      <div class="bg-slate-900 p-5 rounded-xl border border-slate-800/80 space-y-2">
+        <div class="flex items-center justify-between text-slate-400">
+          <span class="text-xs font-medium uppercase tracking-wider">Faturamento (R$)</span>
+          <i data-lucide="dollar-sign" class="w-4 h-4 text-emerald-400"></i>
+        </div>
+        <div id="kpi-faturamento" class="text-2xl font-bold text-emerald-400">R$ 2.450,00</div>
+        <div class="text-xs text-slate-400">Total em O.S. aprovadas</div>
+      </div>
+    </div>
+
+    <!-- Tables Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- OS Table (2 cols) -->
+      <div class="lg:col-span-2 bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="clipboard-list" class="w-5 h-5 text-orange-500"></i>
+            <h2 class="font-bold text-slate-200">Ordens de Serviço Recentes</h2>
+          </div>
+          <span id="os-count" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">4 registros</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-300">
+            <thead class="bg-slate-950/50 text-xs uppercase text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="px-5 py-3 font-semibold">Nº OS</th>
+                <th class="px-5 py-3 font-semibold">Cliente</th>
+                <th class="px-5 py-3 font-semibold">Status</th>
+                <th class="px-5 py-3 font-semibold">Data</th>
+                <th class="px-5 py-3 font-semibold text-right">Valor Total</th>
+              </tr>
+            </thead>
+            <tbody id="os-tbody" class="divide-y divide-slate-800/60">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Clientes List (1 col) -->
+      <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl flex flex-col">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <i data-lucide="user-check" class="w-5 h-5 text-cyan-400"></i>
+            <h2 class="font-bold text-slate-200">Clientes Recentes</h2>
+          </div>
+          <span id="cli-count" class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700">3 ativos</span>
+        </div>
+
+        <div class="divide-y divide-slate-800/60 flex-1 overflow-y-auto" id="cli-list">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Technical Guide / Notice -->
+    <div class="p-6 bg-slate-900/60 rounded-2xl border border-slate-800 space-y-3">
+      <div class="flex items-center space-x-2 text-orange-400 font-semibold text-sm">
+        <i data-lucide="info" class="w-4 h-4"></i>
+        <span>Informação sobre a Arquitetura (Map-OS + Supabase + Pages)</span>
+      </div>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        1. <strong>Banco de Dados no Supabase (PostgreSQL):</strong> O script completo de criação com todas as 34 tabelas, relacionamentos, permissões e usuário administrador está disponível no arquivo <code class="text-orange-300 font-mono">supabase/schema_mapos_postgres.sql</code> no repositório.<br>
+        2. <strong>Hospedagem PHP vs. GitHub Pages:</strong> O GitHub Pages hospeda páginas web estáticas (HTML/JS/CSS). Para a versão completa clássica em PHP (CodeIgniter 3 com geração de PDF e relatórios), execute localmente via XAMPP ou hospede em plataformas como Render, Railway ou Docker VPS.
+      </p>
+    </div>
+
+  </main>
+
+  <!-- Modal Configuração Supabase -->
+  <div id="config-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-2 text-white font-bold text-lg">
+          <i data-lucide="database" class="w-5 h-5 text-orange-500"></i>
+          <span>Conexão com Supabase</span>
+        </div>
+        <button onclick="toggleConfigModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-400">
+        Insira a URL e a Anon Key do seu projeto no Supabase para sincronizar as tabelas diretamente pelo navegador.
+      </p>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">SUPABASE URL</label>
+          <input type="text" id="cfg-supa-url" placeholder="https://seu-projeto.supabase.co" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500 font-mono">
+        </div>
+        <div>
+          <label class="block text-slate-300 font-medium mb-1">SUPABASE ANON KEY</label>
+          <input type="password" id="cfg-supa-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:border-orange-500 font-mono">
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end space-x-3 pt-2">
+        <button onclick="toggleConfigModal()" class="px-4 py-2 text-xs font-medium text-slate-300 hover:text-white">Cancelar</button>
+        <button onclick="salvarConfigSupabase()" class="px-4 py-2 text-xs font-semibold bg-orange-600 hover:bg-orange-500 text-white rounded-lg transition shadow-lg shadow-orange-600/30">
+          Salvar e Conectar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
+    Map-OS v5.3.0 &bull; Adaptado para Supabase & GitHub Pages &bull; Administrador: felipe01sigma@gmail.com
+  </footer>
+
+  <script>
+    // Inicialização de Dados
+    const mockOS = [
+      { id: 1042, cliente: 'Auto Peças Silva Ltda', status: 'Em Andamento', data: '06/11/2026', total: 'R$ 850,00' },
+      { id: 1041, cliente: 'Hospital Regional MJ', status: 'Aberto', data: '05/11/2026', total: 'R$ 1.200,00' },
+      { id: 1040, cliente: 'Cooperativa Agro Puxirum', status: 'Finalizado', data: '04/11/2026', total: 'R$ 400,00' },
+      { id: 1039, cliente: 'Felipe Monteiro', status: 'Aprovado', data: '02/11/2026', total: 'R$ 0,00' }
+    ];
+
+    const mockClientes = [
+      { nome: 'Auto Peças Silva Ltda', doc: '12.345.678/0001-90', fone: '(11) 98765-4321' },
+      { nome: 'Hospital Regional MJ', doc: '98.765.432/0001-10', fone: '(93) 99123-4567' },
+      { nome: 'Cooperativa Agro Puxirum', doc: '45.123.890/0001-55', fone: '(93) 98400-1122' }
+    ];
+
+    function renderTabelas(osList, cliList) {
+      const osTbody = document.getElementById('os-tbody');
+      osTbody.innerHTML = '';
+      osList.forEach(os => {
+        let badgeColor = 'bg-slate-800 text-slate-300 border-slate-700';
+        if (os.status === 'Aberto') badgeColor = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+        if (os.status === 'Em Andamento') badgeColor = 'bg-sky-500/10 text-sky-400 border-sky-500/20';
+        if (os.status === 'Finalizado' || os.status === 'Aprovado') badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-800/40 transition';
+        row.innerHTML = `
+          <td class="px-5 py-4 font-mono font-bold text-orange-400">#${os.id}</td>
+          <td class="px-5 py-4 font-medium text-slate-200">${os.cliente}</td>
+          <td class="px-5 py-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeColor}">${os.status}</span></td>
+          <td class="px-5 py-4 text-xs text-slate-400">${os.data}</td>
+          <td class="px-5 py-4 text-right font-semibold text-slate-200">${os.total}</td>
+        `;
+        osTbody.appendChild(row);
+      });
+
+      const cliDiv = document.getElementById('cli-list');
+      cliDiv.innerHTML = '';
+      cliList.forEach(cli => {
+        const item = document.createElement('div');
+        item.className = 'p-4 hover:bg-slate-800/40 transition flex items-center justify-between text-xs';
+        item.innerHTML = `
+          <div>
+            <div class="font-semibold text-slate-200">${cli.nome}</div>
+            <div class="text-slate-400">${cli.doc}</div>
+          </div>
+          <div class="text-slate-400 font-mono">${cli.fone}</div>
+        `;
+        cliDiv.appendChild(item);
+      });
+    }
+
+    function toggleConfigModal() {
+      const modal = document.getElementById('config-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    function salvarConfigSupabase() {
+      const url = document.getElementById('cfg-supa-url').value.trim();
+      const key = document.getElementById('cfg-supa-key').value.trim();
+      if (url && key) {
+        localStorage.setItem('mapos_supa_url', url);
+        localStorage.setItem('mapos_supa_key', key);
+        toggleConfigModal();
+        carregarDados();
+      } else {
+        alert('Por favor informe a URL e a Anon Key do Supabase.');
+      }
+    }
+
+    async function carregarDados() {
+      const url = localStorage.getItem('mapos_supa_url');
+      const key = localStorage.getItem('mapos_supa_key');
+      const badgeText = document.getElementById('supa-badge-text');
+
+      if (url && key && window.supabase) {
+        try {
+          const client = window.supabase.createClient(url, key);
+          const { data: osData, error: osErr } = await client.from('os').select('*, clientes(nomeCliente)').limit(10);
+          const { data: cliData, error: cliErr } = await client.from('clientes').select('*').limit(10);
+
+          if (!osErr && osData && osData.length > 0) {
+            const formattedOS = osData.map(o => ({
+              id: o.idOs,
+              cliente: o.clientes?.nomeCliente || 'Cliente #' + o.clientes_id,
+              status: o.status || 'Aberto',
+              data: o.dataInicial || 'Recente',
+              total: 'R$ ' + Number(o.valorTotal || 0).toFixed(2).replace('.', ',')
+            }));
+            const formattedCli = cliData.map(c => ({
+              nome: c.nomeCliente,
+              doc: c.documento,
+              fone: c.telefone || c.celular || 'S/ Telefone'
+            }));
+            renderTabelas(formattedOS, formattedCli);
+            badgeText.textContent = 'Supabase Conectado (Online)';
+            return;
+          }
+        } catch (e) {
+          console.warn('Erro ao conectar ao Supabase remoto, usando dados em cache/demonstração:', e);
+        }
+      }
+
+      badgeText.textContent = 'Modo Local / Demonstrativo';
+      renderTabelas(mockOS, mockClientes);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      const savedUrl = localStorage.getItem('mapos_supa_url');
+      const savedKey = localStorage.getItem('mapos_supa_key');
+      if (savedUrl) document.getElementById('cfg-supa-url').value = savedUrl;
+      if (savedKey) document.getElementById('cfg-supa-key').value = savedKey;
+      carregarDados();
+    });
+  </script>
+</body>
+</html>
