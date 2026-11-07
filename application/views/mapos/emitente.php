@@ -44,13 +44,13 @@ $logo = (string) ($emitente->url_logo ?? '');
         <input type="hidden" name="<?= e($this->security->get_csrf_token_name()) ?>" value="<?= e($this->security->get_csrf_hash()) ?>">
 
         <section class="<?= e($caixa) ?>" aria-labelledby="secao-empresa">
-            <h2 id="secao-empresa" class="text-heading-sm text-text">Empresa</h2>
+            <h2 id="secao-empresa" class="text-heading-sm text-text">Identificação do Emitente</h2>
             <div class="<?= e($grade) ?>">
                 <div class="sm:col-span-2">
-                    <?= component('input', $campo('nome', ['label' => 'Razão social', 'required' => true, 'autocomplete' => 'organization', 'attrs' => ['maxlength' => 255, 'data-msg-vazio' => 'Informe a razão social.']])) ?>
+                    <?= component('input', $campo('nome', ['label' => 'Nome ou Razão social', 'required' => true, 'autocomplete' => 'name', 'attrs' => ['maxlength' => 255, 'data-msg-vazio' => 'Informe o nome ou razão social.']])) ?>
                 </div>
-                <?= component('input', $campo('cnpj', ['label' => 'CNPJ ou CPF', 'required' => true, 'attrs' => ['data-mascara' => 'documento', 'maxlength' => 45, 'data-msg-vazio' => 'Informe o CNPJ ou CPF.']])) ?>
-                <?= component('input', $campo('ie', ['label' => 'Inscrição estadual', 'attrs' => ['maxlength' => 50]])) ?>
+                <?= component('input', $campo('cnpj', ['label' => 'CPF ou CNPJ', 'required' => true, 'attrs' => ['data-mascara' => 'documento', 'maxlength' => 45, 'data-msg-vazio' => 'Informe o CPF ou CNPJ.']])) ?>
+                <?= component('input', $campo('ie', ['label' => 'Inscrição estadual (opcional)', 'attrs' => ['maxlength' => 50]])) ?>
                 <?= component('input', $campo('telefone', ['label' => 'Telefone', 'type' => 'tel', 'required' => true, 'autocomplete' => 'tel', 'attrs' => ['data-mascara' => 'telefone', 'maxlength' => 20, 'data-msg-vazio' => 'Informe o telefone.']])) ?>
                 <?= component('input', $campo('email', ['label' => 'E-mail', 'type' => 'email', 'required' => true, 'autocomplete' => 'email', 'help' => 'Remetente dos e-mails do sistema.', 'attrs' => ['maxlength' => 255, 'data-msg-vazio' => 'Informe o e-mail.']])) ?>
             </div>

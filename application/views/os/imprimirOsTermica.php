@@ -23,7 +23,7 @@ $totalProdutos = 0; ?>
             </div>
             <div class="mt-1 text-center">
                 <span class="text-xs uppercase"><b><?php echo e($emitente->nome); ?></b></span><br>
-                <?php if ($emitente->cnpj != "00.000.000/0000-00") { ?><span class="inline-flex items-center gap-1"><?= icon('fingerprint', ['class' => 'size-4']) ?> <?php echo e($emitente->cnpj); ?></span><br><?php } ?>
+                <?php if (!empty($emitente->cnpj) && !in_array($emitente->cnpj, ['00.000.000/0000-00', '000.000.000-00'])) { ?><span class="inline-flex items-center gap-1"><?= icon('fingerprint', ['class' => 'size-4']) ?> <?php echo e($emitente->cnpj); ?></span><br><?php } ?>
                 <span><?php echo e($emitente->rua . ', ' . $emitente->numero) . '<br>' . e($emitente->bairro . ', ' . $emitente->cidade . ' - ' . $emitente->uf); ?></span><br>
                 <span><?php echo e($emitente->email); ?> - <?php echo e($emitente->telefone); ?></span>
             </div>
@@ -211,7 +211,7 @@ $totalProdutos = 0; ?>
             </div>
             <div class="mt-1 text-center">
                 <span class="text-xs uppercase"><b><?php echo e($emitente->nome); ?></b></span><br>
-                <?php if ($emitente->cnpj != "00.000.000/0000-00") { ?><span class="inline-flex items-center gap-1"><?= icon('fingerprint', ['class' => 'size-4']) ?> <?php echo e($emitente->cnpj); ?></span><br><?php } ?>
+                <?php if (!empty($emitente->cnpj) && !in_array($emitente->cnpj, ['00.000.000/0000-00', '000.000.000-00'])) { ?><span class="inline-flex items-center gap-1"><?= icon('fingerprint', ['class' => 'size-4']) ?> <?php echo e($emitente->cnpj); ?></span><br><?php } ?>
                 <span><?php echo e($emitente->rua . ', ' . $emitente->numero) . '<br>' . e($emitente->bairro . ', ' . $emitente->cidade . ' - ' . $emitente->uf); ?></span><br>
                 <span><?php echo e($emitente->email); ?> - <?php echo e($emitente->telefone); ?></span>
             </div>

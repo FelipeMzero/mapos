@@ -1,10 +1,10 @@
-name: Deploy to GitHub Pages
+name: Deploy Map-OS Web to GitHub Pages
 
 on:
   push:
     branches:
-      - v5.3.0
       - master
+      - main
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -23,15 +23,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Repositório
         uses: actions/checkout@v4
 
-      - name: Setup Pages
+      - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
-      - name: Upload artifact
+      - name: Upload Artifact (public)
         uses: actions/upload-pages-artifact@v3
         with:
           path: './public'

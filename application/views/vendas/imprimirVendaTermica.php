@@ -22,7 +22,7 @@
             <div class="mt-1 text-center">
                 <span class="text-xl"><b><?php echo e($emitente->nome); ?></b></span><br>
                 <span>
-                    <?php echo e('CNPJ: ' . $emitente->cnpj); ?><br>
+                    <?php echo e(rotulo_documento($emitente->cnpj) . ': ' . $emitente->cnpj); ?><br>
                     <?php echo e($emitente->rua . ', ' . $emitente->numero . ', ' . $emitente->bairro . ' - ' . $emitente->cidade . ' - ' . $emitente->uf); ?>
                 </span><br>
                 <span><?php echo e('Fone: ' . $emitente->telefone); ?></span>

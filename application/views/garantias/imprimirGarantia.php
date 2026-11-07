@@ -20,7 +20,7 @@
                 <div class="flex-1">
                     <span class="text-xl"><?php echo e($emitente->nome); ?></span><br>
                     <span>
-                        <?php echo e($emitente->cnpj); ?><br>
+                        <?php echo e(rotulo_documento($emitente->cnpj) . ': ' . $emitente->cnpj); ?><br>
                         <?php echo e($emitente->rua . ', nº:' . $emitente->numero . ', ' . $emitente->bairro . ' - ' . $emitente->cidade . ' - ' . $emitente->uf); ?>
                     </span><br>
                     <span>E-mail: <?php echo e($emitente->email . ' - Fone: ' . $emitente->telefone); ?></span>

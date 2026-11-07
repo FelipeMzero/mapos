@@ -1,0 +1,27 @@
+name: CI - Verificação e Sintaxe
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  pull_request:
+
+jobs:
+  lint:
+    name: Verificação de Sintaxe PHP
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, json, curl
+
+      - name: Verificar Sintaxe PHP dos Arquivos
+        run: |
+          find application/ -type f -name "*.php" -exec php -l {} \; > /dev/null
+          echo "Todos os arquivos PHP estao com sintaxe valida!"

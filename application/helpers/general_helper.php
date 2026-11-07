@@ -317,3 +317,15 @@ if (! function_exists('ufsDoBrasil')) {
         ];
     }
 }
+
+if (! function_exists('rotulo_documento')) {
+    /**
+     * Retorna 'CPF' ou 'CNPJ' de acordo com a quantidade de dígitos numéricos do documento.
+     */
+    function rotulo_documento(?string $documento): string
+    {
+        $digitos = preg_replace('/\D/', '', (string) $documento);
+
+        return strlen($digitos) === 11 ? 'CPF' : 'CNPJ';
+    }
+}

@@ -24,8 +24,8 @@ $totalProdutos = 0;
                     </div>
                     <div class="mt-0.5 px-2.5">
                         <span class="text-base"><b><?= e($emitente->nome) ?></b></span><br>
-                        <?php if ($emitente->cnpj != "00.000.000/0000-00") : ?>
-                            <span>CNPJ: <?= e($emitente->cnpj) ?></span><br>
+                        <?php if (!empty($emitente->cnpj) && !in_array($emitente->cnpj, ['00.000.000/0000-00', '000.000.000-00'])) : ?>
+                            <span><?= rotulo_documento($emitente->cnpj) ?>: <?= e($emitente->cnpj) ?></span><br>
                         <?php endif; ?>
                         <span>
                             <?= e($emitente->rua.', '.$emitente->numero.', '.$emitente->bairro) ?><br>
@@ -276,8 +276,8 @@ $totalProdutos = 0;
                         </div>
                         <div class="mt-0.5 px-2.5">
                             <span class="text-base"><b><?= e($emitente->nome) ?></b></span><br>
-                            <?php if ($emitente->cnpj != "00.000.000/0000-00") : ?>
-                                <span>CNPJ: <?= e($emitente->cnpj) ?></span><br>
+                            <?php if (!empty($emitente->cnpj) && !in_array($emitente->cnpj, ['00.000.000/0000-00', '000.000.000-00'])) : ?>
+                                <span><?= rotulo_documento($emitente->cnpj) ?>: <?= e($emitente->cnpj) ?></span><br>
                             <?php endif; ?>
                             <span>
                                 <?= e($emitente->rua.', '.$emitente->numero.', '.$emitente->bairro) ?><br>
@@ -532,8 +532,8 @@ $totalProdutos = 0; ?>
                         </div>
                         <div class="mt-0.5 px-2.5">
                             <span class="text-base"><b><?= e($emitente->nome) ?></b></span><br>
-                            <?php if ($emitente->cnpj != "00.000.000/0000-00") : ?>
-                                <span>CNPJ: <?= e($emitente->cnpj) ?></span><br>
+                            <?php if (!empty($emitente->cnpj) && !in_array($emitente->cnpj, ['00.000.000/0000-00', '000.000.000-00'])) : ?>
+                                <span><?= rotulo_documento($emitente->cnpj) ?>: <?= e($emitente->cnpj) ?></span><br>
                             <?php endif; ?>
                             <span>
                                 <?= e($emitente->rua.', '.$emitente->numero.', '.$emitente->bairro) ?><br>
