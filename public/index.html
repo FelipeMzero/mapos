@@ -1,330 +1,560 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Map-OS Web - Gestão & OS com Supabase BaaS</title>
-  <!-- Tailwind CSS -->
+  <title>Map-OS v5 • Sistema de Gestão & OS</title>
+  
+  <!-- Fontes Oficiais do Map-OS (Rubik e Space Grotesk) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#F37338',
+              hover: '#E06025',
+              tint: '#FFF1EB',
+              dark: '#C84F17'
+            },
+            surface: {
+              DEFAULT: '#FFFFFF',
+              subtle: '#F8FAFC',
+              dark: '#0F172A',
+              darkcard: '#1E293B',
+              darkborder: '#334155'
+            }
+          },
+          fontFamily: {
+            sans: ['Rubik', 'sans-serif'],
+            display: ['Space Grotesk', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
   <style>
-    :root {
-      --primary: #F37338;
-      --primary-hover: #E06025;
-      --primary-light: #FFF1EB;
-    }
-    .btn-primary {
-      background-color: var(--primary);
-      color: #1A1A1A;
-      font-weight: 600;
-      transition: all 0.2s ease;
-    }
-    .btn-primary:hover {
-      background-color: var(--primary-hover);
-      color: #FFFFFF;
-    }
-    .tab-active {
-      border-bottom: 2px solid var(--primary);
-      color: var(--primary);
-      font-weight: 600;
-    }
+    /* Regras de impressão para OS padrão A4 */
     @media print {
       body * {
-        visibility: hidden;
+        visibility: hidden !important;
       }
       #area-impressao, #area-impressao * {
-        visibility: visible;
+        visibility: visible !important;
       }
       #area-impressao {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 20px;
-        background: white;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 24px !important;
+        background: #FFFFFF !important;
+        color: #0F172A !important;
       }
     }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
 
-  <!-- Topbar -->
-  <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-lg bg-[#F37338] flex items-center justify-center text-slate-950 font-black text-xl shadow">
+  <div class="flex h-screen overflow-hidden">
+    
+    <!-- SIDEBAR OFICIAL DO MAP-OS v5 -->
+    <aside id="sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 z-30 transition-all duration-300 border-r border-slate-800">
+      
+      <!-- Topo da Sidebar (Brand) -->
+      <div class="h-16 flex items-center px-6 gap-3 border-b border-slate-800 bg-slate-950">
+        <div class="w-9 h-9 rounded-lg bg-brand flex items-center justify-center text-slate-950 font-black text-xl shadow-md">
           M
         </div>
         <div>
-          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
-            Map-OS Web <span class="text-xs bg-[#F37338]/20 text-[#F37338] px-2 py-0.5 rounded-full font-mono">BaaS Supabase</span>
-          </h1>
-          <p class="text-xs text-slate-400">Ordens de Serviço & Gestão em Nuvem</p>
+          <span class="font-display font-bold text-lg text-white tracking-tight flex items-center gap-1.5">
+            Map-OS <span class="text-[10px] bg-brand/20 text-brand px-1.5 py-0.5 rounded font-mono font-bold">v5.3</span>
+          </span>
+          <p class="text-[11px] text-slate-400">PostgreSQL / Supabase</p>
         </div>
       </div>
 
-      <!-- Status Conexão Supabase -->
-      <div class="flex items-center space-x-4">
-        <div id="status-conexao" class="flex items-center space-x-2 text-xs bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700">
-          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" id="dot-conexao"></span>
-          <span id="texto-conexao" class="text-slate-300">Supabase não configurado</span>
-        </div>
-        <button onclick="trocarAba('config')" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition" title="Configurar Supabase">
-          <i data-lucide="settings" class="w-5 h-5"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Navegação por Abas -->
-    <div class="bg-slate-900/90 border-t border-slate-800 px-4 sm:px-8 flex space-x-6 text-sm overflow-x-auto">
-      <button onclick="trocarAba('os')" id="tab-os" class="py-3 px-1 text-slate-300 hover:text-white flex items-center gap-2 transition tab-active">
-        <i data-lucide="wrench" class="w-4 h-4"></i> Ordens de Serviço
-      </button>
-      <button onclick="trocarAba('clientes')" id="tab-clientes" class="py-3 px-1 text-slate-300 hover:text-white flex items-center gap-2 transition">
-        <i data-lucide="users" class="w-4 h-4"></i> Clientes
-      </button>
-      <button onclick="trocarAba('emitente')" id="tab-emitente" class="py-3 px-1 text-slate-300 hover:text-white flex items-center gap-2 transition">
-        <i data-lucide="badge-check" class="w-4 h-4"></i> Emitente (CPF)
-      </button>
-      <button onclick="trocarAba('config')" id="tab-config" class="py-3 px-1 text-slate-300 hover:text-white flex items-center gap-2 transition">
-        <i data-lucide="database" class="w-4 h-4"></i> Conexão BaaS
-      </button>
-    </div>
-  </header>
-
-  <!-- Conteúdo Principal -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
-
-    <!-- Notificações Toast / Alertas -->
-    <div id="alerta-global" class="hidden mb-6 p-4 rounded-xl border flex items-center justify-between transition-all"></div>
-
-    <!-- ABA 1: ORDENS DE SERVIÇO -->
-    <section id="secao-os" class="space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <!-- Menu de Navegação -->
+      <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-6 text-sm">
+        
+        <!-- Grupo: OPERAÇÃO -->
         <div>
-          <h2 class="text-xl font-bold text-slate-900">Ordens de Serviço</h2>
-          <p class="text-sm text-slate-500">Gerencie e imprima as ordens de serviço com cabeçalho CPF do emitente</p>
+          <span class="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Operação</span>
+          <div class="mt-2 space-y-1">
+            <button onclick="navegarPara('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium bg-brand/10 text-brand border-l-2 border-brand">
+              <i data-lucide="layout-dashboard" class="w-4 h-4"></i> Dashboard
+            </button>
+            <button onclick="navegarPara('os')" id="nav-os" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium">
+              <i data-lucide="file-text" class="w-4 h-4"></i> Ordens de Serviço
+            </button>
+            <button onclick="navegarPara('clientes')" id="nav-clientes" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium">
+              <i data-lucide="users" class="w-4 h-4"></i> Clientes
+            </button>
+            <button onclick="navegarPara('produtos')" id="nav-produtos" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium">
+              <i data-lucide="package" class="w-4 h-4"></i> Produtos
+            </button>
+            <button onclick="navegarPara('servicos')" id="nav-servicos" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium">
+              <i data-lucide="wrench" class="w-4 h-4"></i> Serviços
+            </button>
+          </div>
         </div>
-        <button onclick="abrirModalNovaOs()" class="btn-primary px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm text-sm">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i> Nova Ordem de Serviço
-        </button>
-      </div>
 
-      <!-- Tabela de OS -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-600">
-            <thead class="bg-slate-50 text-slate-700 text-xs uppercase font-semibold border-b border-slate-200">
-              <tr>
-                <th class="px-6 py-4">Nº OS</th>
-                <th class="px-6 py-4">Cliente</th>
-                <th class="px-6 py-4">Data Inicial</th>
-                <th class="px-6 py-4">Status</th>
-                <th class="px-6 py-4">Valor Total</th>
-                <th class="px-6 py-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody id="tabela-os-corpo" class="divide-y divide-slate-100">
-              <tr>
-                <td colspan="6" class="px-6 py-12 text-center text-slate-400">
-                  <i data-lucide="inbox" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
-                  Carregando ordens de serviço do Supabase...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABA 2: CLIENTES -->
-    <section id="secao-clientes" class="hidden space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <!-- Grupo: SISTEMA -->
         <div>
-          <h2 class="text-xl font-bold text-slate-900">Cadastro de Clientes</h2>
-          <p class="text-sm text-slate-500">Controle da sua base de clientes sincronizada no Supabase</p>
+          <span class="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-400">Configurações</span>
+          <div class="mt-2 space-y-1">
+            <button onclick="navegarPara('emitente')" id="nav-emitente" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium">
+              <i data-lucide="badge-check" class="w-4 h-4"></i> Emitente (CPF)
+            </button>
+            <button onclick="navegarPara('usuarios')" id="nav-usuarios" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium">
+              <i data-lucide="user-cog" class="w-4 h-4"></i> Usuários
+            </button>
+            <button onclick="navegarPara('config')" id="nav-config" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition font-medium">
+              <i data-lucide="database" class="w-4 h-4"></i> Conexão Supabase
+            </button>
+          </div>
         </div>
-        <button onclick="abrirModalNovoCliente()" class="btn-primary px-4 py-2.5 rounded-xl flex items-center justify-center gap-2 shadow-sm text-sm">
-          <i data-lucide="user-plus" class="w-4 h-4"></i> Cadastrar Cliente
+
+      </nav>
+
+      <!-- Rodapé da Sidebar (Usuário Logado) -->
+      <div class="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-8 h-8 rounded-full bg-brand/20 text-brand flex items-center justify-center font-bold text-xs uppercase flex-shrink-0" id="user-avatar">
+            FM
+          </div>
+          <div class="truncate">
+            <p class="text-xs font-semibold text-white truncate" id="user-name">Felipe Monteiro</p>
+            <p class="text-[11px] text-slate-400 truncate" id="user-email">felipe01sigma@gmail.com</p>
+          </div>
+        </div>
+        <button onclick="alternarTema()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Alternar tema Claro/Escuro">
+          <i data-lucide="moon" id="icone-tema" class="w-4 h-4"></i>
         </button>
       </div>
 
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-slate-600">
-            <thead class="bg-slate-50 text-slate-700 text-xs uppercase font-semibold border-b border-slate-200">
-              <tr>
-                <th class="px-6 py-4">Nome</th>
-                <th class="px-6 py-4">Documento</th>
-                <th class="px-6 py-4">Telefone</th>
-                <th class="px-6 py-4">E-mail</th>
-                <th class="px-6 py-4">Cidade / UF</th>
-              </tr>
-            </thead>
-            <tbody id="tabela-clientes-corpo" class="divide-y divide-slate-100">
-              <tr>
-                <td colspan="5" class="px-6 py-12 text-center text-slate-400">
-                  Nenhum cliente cadastrado ainda.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      
+      <!-- TOPBAR SUPERIOR -->
+      <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-8 z-20">
+        <div class="flex items-center gap-4">
+          <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div>
+            <div class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
+              <span>Map-OS</span>
+              <span>/</span>
+              <span id="breadcrumb-tela" class="font-medium text-slate-800 dark:text-slate-200">Dashboard</span>
+            </div>
+          </div>
         </div>
-      </div>
-    </section>
 
-    <!-- ABA 3: EMITENTE (CPF) -->
-    <section id="secao-emitente" class="hidden space-y-6">
-      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div class="max-w-3xl">
-          <h2 class="text-xl font-bold text-slate-900">Identificação do Emitente (Pessoa Física / CPF)</h2>
-          <p class="text-sm text-slate-500 mt-1">
-            Seus dados cadastrados aqui sairão automaticamente no topo de todas as impressões de Ordens de Serviço e recibos, identificados com seu <b>CPF</b>.
-          </p>
+        <!-- Ações no Topo -->
+        <div class="flex items-center gap-3">
+          <!-- Indicador de Status do Supabase -->
+          <div id="status-conexao" class="flex items-center gap-2 text-xs bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500" id="dot-conexao"></span>
+            <span id="texto-conexao" class="font-medium text-slate-700 dark:text-slate-300">Supabase Conectado</span>
+          </div>
 
-          <form id="form-emitente" onsubmit="salvarEmitente(event)" class="mt-8 space-y-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="sm:col-span-2">
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nome Completo / Prestador *</label>
-                <input type="text" id="emitente-nome" required placeholder="Ex: Felipe Monteiro" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
-              </div>
+          <!-- Botão Nova OS -->
+          <button onclick="abrirModalNovaOs()" class="bg-brand hover:bg-brand-hover text-slate-950 font-bold px-3.5 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Nova OS
+          </button>
+        </div>
+      </header>
 
+      <!-- CONTEÚDO DAS TELAS -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-8 bg-slate-50 dark:bg-slate-950">
+        
+        <!-- Notificações Toast / Alertas Globais -->
+        <div id="alerta-global" class="hidden mb-6 p-4 rounded-xl border flex items-center justify-between shadow-sm"></div>
+
+        <!-- ======================================================== -->
+        <!-- 1. TELA: DASHBOARD (PADRÃO MAP-OS v5)                     -->
+        <!-- ======================================================== -->
+        <section id="tela-dashboard" class="space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h1 class="font-display text-2xl font-bold text-slate-900 dark:text-white">Painel de Controle</h1>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Visão geral das ordens de serviço, clientes e receitas.</p>
+            </div>
+            <span class="text-xs text-slate-600 dark:text-slate-400 font-mono" id="data-atual"></span>
+          </div>
+
+          <!-- KPI Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- KPI 1: Clientes -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
               <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">CPF *</label>
-                <input type="text" id="emitente-cpf" required maxlength="14" oninput="mascaraCpf(this)" placeholder="000.000.000-00" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none font-mono">
-                <span class="text-xs text-slate-400">Identificador fiscal principal do emitente</span>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Clientes</p>
+                <h3 class="text-2xl font-bold text-slate-900 dark:text-white font-mono mt-1" id="kpi-clientes">0</h3>
+                <span class="text-[11px] text-emerald-600 font-medium">Cadastrados no sistema</span>
               </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Telefone / WhatsApp *</label>
-                <input type="text" id="emitente-telefone" required placeholder="(00) 00000-0000" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
-              </div>
-
-              <div class="sm:col-span-2">
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">E-mail de Contato *</label>
-                <input type="email" id="emitente-email" required placeholder="contato@seunegocio.com.br" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">CEP (Busca automática)</label>
-                <input type="text" id="emitente-cep" maxlength="9" onblur="buscarCep(this.value)" placeholder="00000-000" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Número</label>
-                <input type="text" id="emitente-numero" placeholder="123" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
-              </div>
-
-              <div class="sm:col-span-2">
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Rua / Logradouro</label>
-                <input type="text" id="emitente-rua" placeholder="Rua das Flores" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
-              </div>
-
-              <div>
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Bairro</label>
-                <input type="text" id="emitente-bairro" placeholder="Centro" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
-              </div>
-
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Cidade</label>
-                  <input type="text" id="emitente-cidade" placeholder="Cidade" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
-                </div>
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">UF</label>
-                  <input type="text" id="emitente-uf" maxlength="2" placeholder="UF" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none uppercase font-mono">
-                </div>
-              </div>
-
-              <div class="sm:col-span-2">
-                <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">URL da Logo (Opcional)</label>
-                <input type="url" id="emitente-logo" placeholder="https://..." class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none">
+              <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                <i data-lucide="users" class="w-6 h-6"></i>
               </div>
             </div>
 
-            <div class="flex justify-end pt-4 border-t border-slate-100">
-              <button type="submit" class="btn-primary px-6 py-2.5 rounded-xl shadow-sm text-sm flex items-center gap-2">
-                <i data-lucide="save" class="w-4 h-4"></i> Salvar Dados do Emitente
-              </button>
+            <!-- KPI 2: OS Abertas -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">OS Em Aberto</p>
+                <h3 class="text-2xl font-bold text-amber-600 font-mono mt-1" id="kpi-os-abertas">0</h3>
+                <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Aguardando atendimento</span>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
+                <i data-lucide="clock" class="w-6 h-6"></i>
+              </div>
             </div>
-          </form>
-        </div>
-      </div>
-    </section>
 
-    <!-- ABA 4: CONFIGURAÇÃO SUPABASE BAAS -->
-    <section id="secao-config" class="hidden space-y-6">
-      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm max-w-2xl">
-        <h2 class="text-xl font-bold text-slate-900">Configuração do Supabase (BaaS)</h2>
-        <p class="text-sm text-slate-500 mt-1">
-          Insira abaixo as credenciais da sua API do Supabase para conectar este frontend estático do GitHub Pages à sua base PostgreSQL.
-        </p>
+            <!-- KPI 3: OS Finalizadas -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">OS Finalizadas</p>
+                <h3 class="text-2xl font-bold text-emerald-600 font-mono mt-1" id="kpi-os-finalizadas">0</h3>
+                <span class="text-[11px] text-emerald-600 font-medium">Concluídas com sucesso</span>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
+                <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+              </div>
+            </div>
 
-        <form id="form-config" onsubmit="salvarConfigSupabase(event)" class="mt-6 space-y-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Supabase Project URL *</label>
-            <input type="url" id="supabase-url" required placeholder="https://xxxxxxxxx.supabase.co" class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none font-mono">
+            <!-- KPI 4: Receita Total -->
+            <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+              <div>
+                <p class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Total em Serviços</p>
+                <h3 class="text-2xl font-bold text-slate-900 dark:text-white font-mono mt-1" id="kpi-receita">R$ 0,00</h3>
+                <span class="text-[11px] text-slate-600 dark:text-slate-400 font-medium">Soma de todas as OS</span>
+              </div>
+              <div class="w-12 h-12 rounded-xl bg-brand/10 text-brand flex items-center justify-center">
+                <i data-lucide="wallet" class="w-6 h-6"></i>
+              </div>
+            </div>
+
           </div>
 
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Supabase Anon Key *</label>
-            <input type="password" id="supabase-key" required placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm focus:border-[#F37338] focus:ring-1 focus:ring-[#F37338] outline-none font-mono">
-            <span class="text-xs text-slate-400">Disponível em Project Settings > API > Project API keys</span>
+          <!-- Tabela de OS Recentes -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-base font-bold text-slate-900 dark:text-white">Últimas Ordens de Serviço</h2>
+              <button onclick="navegarPara('os')" class="text-xs font-bold text-brand hover:text-brand-hover">Ver todas as OS &rarr;</button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead class="text-xs text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+                  <tr>
+                    <th class="py-3 px-4">Nº OS</th>
+                    <th class="py-3 px-4">Cliente</th>
+                    <th class="py-3 px-4">Equipamento</th>
+                    <th class="py-3 px-4">Status</th>
+                    <th class="py-3 px-4">Valor</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-dashboard-os" class="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tr>
+                    <td colspan="5" class="py-6 text-center text-slate-400">Nenhuma ordem de serviço recente.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
+        </section>
 
-          <div class="flex gap-3 pt-4 border-t border-slate-100">
-            <button type="submit" class="btn-primary px-5 py-2.5 rounded-xl text-sm flex items-center gap-2">
-              <i data-lucide="link" class="w-4 h-4"></i> Salvar e Conectar
+        <!-- ======================================================== -->
+        <!-- 2. TELA: ORDENS DE SERVIÇO                               -->
+        <!-- ======================================================== -->
+        <section id="tela-os" class="hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div>
+              <h1 class="font-display text-xl font-bold text-slate-900 dark:text-white">Ordens de Serviço</h1>
+              <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Gerencie os orçamentos e serviços prestados com impressão em A4 e térmica.</p>
+            </div>
+            <button onclick="abrirModalNovaOs()" class="bg-brand hover:bg-brand-hover text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-sm transition">
+              <i data-lucide="plus" class="w-4 h-4"></i> Adicionar Ordem de Serviço
             </button>
-            <button type="button" onclick="testarConexaoSupabase()" class="bg-slate-100 hover:bg-slate-200 text-slate-800 px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
-              <i data-lucide="activity" class="w-4 h-4"></i> Testar Conexão
+          </div>
+
+          <!-- Tabela Completa de OS -->
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-xs uppercase font-semibold border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th class="px-6 py-3.5">Nº OS</th>
+                    <th class="px-6 py-3.5">Cliente</th>
+                    <th class="px-6 py-3.5">Data Inicial</th>
+                    <th class="px-6 py-3.5">Status</th>
+                    <th class="px-6 py-3.5">Valor Total</th>
+                    <th class="px-6 py-3.5 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-os-corpo" class="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-slate-400">Carregando ordens de serviço...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 3. TELA: CLIENTES                                        -->
+        <!-- ======================================================== -->
+        <section id="tela-clientes" class="hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div>
+              <h1 class="font-display text-xl font-bold text-slate-900 dark:text-white">Clientes</h1>
+              <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Base de clientes sincronizada em tempo real com o PostgreSQL do Supabase.</p>
+            </div>
+            <button onclick="abrirModalNovoCliente()" class="bg-brand hover:bg-brand-hover text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-sm transition">
+              <i data-lucide="user-plus" class="w-4 h-4"></i> Adicionar Cliente
             </button>
           </div>
-        </form>
 
-        <div class="mt-8 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-2">
-          <p class="font-bold flex items-center gap-1.5"><i data-lucide="info" class="w-4 h-4 text-amber-600"></i> Como preparar o Supabase:</p>
-          <ol class="list-decimal list-inside space-y-1">
-            <li>No painel do Supabase, acesse <b>SQL Editor</b>.</li>
-            <li>Execute o script <code class="bg-amber-100 px-1 py-0.5 rounded">supabase_schema.sql</code> gerado na raiz do repositório.</li>
-            <li>Copie a <b>Project URL</b> e a chave <b>anon/public</b> de <b>Settings > API</b> e cole acima.</li>
-          </ol>
-        </div>
-      </div>
-    </section>
+          <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead class="bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 text-xs uppercase font-semibold border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th class="px-6 py-3.5">Nome / Razão</th>
+                    <th class="px-6 py-3.5">Documento</th>
+                    <th class="px-6 py-3.5">Telefone</th>
+                    <th class="px-6 py-3.5">E-mail</th>
+                    <th class="px-6 py-3.5">Cidade / UF</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-clientes-corpo" class="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-slate-400">Nenhum cliente cadastrado.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
-  </main>
+        <!-- ======================================================== -->
+        <!-- 4. TELA: EMITENTE (CPF) - FORMATO OFICIAL MAP-OS v5      -->
+        <!-- ======================================================== -->
+        <section id="tela-emitente" class="hidden space-y-6 max-w-4xl">
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <header class="border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h1 class="font-display text-xl font-bold text-slate-900 dark:text-white">Configurar Emitente</h1>
+              <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                Seus dados cadastrados aqui sairão nas impressões de OS, termos e recibos identificados pelo seu <b>CPF</b>.
+              </p>
+            </header>
+
+            <form id="form-emitente" onsubmit="salvarEmitente(event)" class="mt-6 space-y-6">
+              
+              <!-- Bloco 1: Identificação -->
+              <div class="space-y-4">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Identificação do Prestador</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome Completo / Prestador *</label>
+                    <input type="text" id="emitente-nome" required placeholder="Felipe Monteiro" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">CPF *</label>
+                    <input type="text" id="emitente-cpf" required maxlength="14" oninput="mascaraCpf(this)" placeholder="000.000.000-00" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none font-mono">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Telefone / WhatsApp *</label>
+                    <input type="text" id="emitente-telefone" required placeholder="(00) 00000-0000" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">E-mail *</label>
+                    <input type="email" id="emitente-email" required placeholder="felipe01sigma@gmail.com" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bloco 2: Endereço -->
+              <div class="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Endereço</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">CEP (Busca Automática)</label>
+                    <input type="text" id="emitente-cep" maxlength="9" onblur="buscarCep(this.value)" placeholder="00000-000" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Rua / Logradouro</label>
+                    <input type="text" id="emitente-rua" placeholder="Rua..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Número</label>
+                    <input type="text" id="emitente-numero" placeholder="123" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Bairro</label>
+                    <input type="text" id="emitente-bairro" placeholder="Centro" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                  </div>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cidade</label>
+                      <input type="text" id="emitente-cidade" placeholder="Cidade" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">UF</label>
+                      <input type="text" id="emitente-uf" maxlength="2" placeholder="UF" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none uppercase font-mono">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bloco 3: Logo -->
+              <div class="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">Logotipo</h3>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">URL da Imagem da Logo</label>
+                  <input type="url" id="emitente-logo" placeholder="https://..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none">
+                </div>
+              </div>
+
+              <div class="flex justify-end pt-4 border-t border-slate-100 dark:border-slate-800">
+                <button type="submit" class="bg-brand hover:bg-brand-hover text-slate-950 font-bold px-6 py-2.5 rounded-xl text-xs flex items-center gap-2 shadow-sm transition">
+                  <i data-lucide="save" class="w-4 h-4"></i> Salvar Emitente (CPF)
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 5. TELA: USUÁRIOS                                        -->
+        <!-- ======================================================== -->
+        <section id="tela-usuarios" class="hidden space-y-6 max-w-4xl">
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h1 class="font-display text-xl font-bold text-slate-900 dark:text-white">Usuários do Sistema</h1>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">Usuários com acesso ao painel do sistema e banco de dados.</p>
+            
+            <div class="mt-6 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+              <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead class="bg-slate-50 dark:bg-slate-800 text-xs uppercase font-semibold">
+                  <tr>
+                    <th class="p-4">Nome</th>
+                    <th class="p-4">E-mail</th>
+                    <th class="p-4">Perfil</th>
+                    <th class="p-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                  <tr>
+                    <td class="p-4 font-bold text-slate-900 dark:text-white">Felipe Monteiro</td>
+                    <td class="p-4 font-mono text-xs">felipe01sigma@gmail.com</td>
+                    <td class="p-4"><span class="bg-brand/10 text-brand px-2 py-0.5 rounded text-xs font-semibold">Administrador</span></td>
+                    <td class="p-4"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-xs font-semibold">Ativo</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- 6. TELA: CONEXÃO SUPABASE (BAAS)                         -->
+        <!-- ======================================================== -->
+        <section id="tela-config" class="hidden space-y-6 max-w-2xl">
+          <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h1 class="font-display text-xl font-bold text-slate-900 dark:text-white">Conexão Supabase (BaaS)</h1>
+            <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+              Conecte a interface estática do GitHub Pages diretamente ao PostgreSQL do Supabase.
+            </p>
+
+            <form id="form-config" onsubmit="salvarConfigSupabase(event)" class="mt-6 space-y-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Supabase Project URL</label>
+                <input type="url" id="supabase-url" required placeholder="https://tfbhqapkloiuogelidhe.supabase.co" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none font-mono">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase mb-1">Supabase Anon Key</label>
+                <input type="password" id="supabase-key" required placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-4 py-2.5 text-sm focus:border-brand focus:ring-1 focus:ring-brand outline-none font-mono">
+              </div>
+
+              <div class="flex gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <button type="submit" class="bg-brand hover:bg-brand-hover text-slate-950 font-bold px-5 py-2.5 rounded-xl text-xs flex items-center gap-2 transition">
+                  <i data-lucide="link" class="w-4 h-4"></i> Salvar e Conectar
+                </button>
+                <button type="button" onclick="testarConexaoSupabase()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 px-4 py-2.5 rounded-xl text-xs font-semibold transition flex items-center gap-2">
+                  <i data-lucide="activity" class="w-4 h-4"></i> Testar Conexão
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- Telas vazias com placeholders -->
+        <section id="tela-produtos" class="hidden">
+          <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+            <i data-lucide="package" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
+            <h3 class="text-base font-bold text-slate-800 dark:text-white">Módulo de Produtos</h3>
+            <p class="text-xs text-slate-500 mt-1">Conectado ao Supabase na tabela <code>produtos</code>.</p>
+          </div>
+        </section>
+
+        <section id="tela-servicos" class="hidden">
+          <div class="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
+            <i data-lucide="wrench" class="w-10 h-10 text-slate-400 mx-auto mb-2"></i>
+            <h3 class="text-base font-bold text-slate-800 dark:text-white">Módulo de Serviços</h3>
+            <p class="text-xs text-slate-500 mt-1">Conectado ao Supabase na tabela <code>servicos</code>.</p>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
 
   <!-- MODAL: NOVA ORDEM DE SERVIÇO -->
-  <div id="modal-os" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-xl rounded-2xl p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-        <h3 class="text-lg font-bold text-slate-900">Cadastrar Nova OS</h3>
+  <div id="modal-os" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-xl rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Cadastrar Nova Ordem de Serviço</h3>
         <button onclick="fecharModal('modal-os')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="salvarNovaOs(event)" class="mt-4 space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Cliente *</label>
-          <select id="os-cliente" required class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none">
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cliente *</label>
+          <select id="os-cliente" required class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none">
             <option value="">Selecione um cliente...</option>
           </select>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Descrição do Produto / Equipamento *</label>
-          <input type="text" id="os-produto" required placeholder="Ex: Notebook Dell Inspiron" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none">
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Descrição do Produto / Equipamento *</label>
+          <input type="text" id="os-produto" required placeholder="Ex: Notebook Lenovo ThinkPad" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Defeito Informado</label>
-          <textarea id="os-defeito" rows="2" placeholder="Ex: Não liga após queda de energia" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none"></textarea>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Defeito Informado</label>
+          <textarea id="os-defeito" rows="2" placeholder="Ex: Falha no conector de energia" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none"></textarea>
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Status</label>
-            <select id="os-status" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Status</label>
+            <select id="os-status" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none">
               <option value="Aberto">Aberto</option>
               <option value="Em Andamento">Em Andamento</option>
               <option value="Aguardando Peças">Aguardando Peças</option>
@@ -333,76 +563,79 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Valor Total (R$)</label>
-            <input type="number" step="0.01" id="os-valor" placeholder="0.00" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none font-mono">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Valor Total (R$)</label>
+            <input type="number" step="0.01" id="os-valor" placeholder="0.00" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none font-mono">
           </div>
         </div>
-        <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
-          <button type="button" onclick="fecharModal('modal-os')" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
-          <button type="submit" class="btn-primary px-5 py-2 text-sm rounded-xl">Salvar Ordem de Serviço</button>
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="fecharModal('modal-os')" class="px-4 py-2 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">Cancelar</button>
+          <button type="submit" class="bg-brand hover:bg-brand-hover text-slate-950 font-bold px-5 py-2 text-xs rounded-xl shadow-sm">Salvar Ordem de Serviço</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- MODAL: NOVO CLIENTE -->
-  <div id="modal-cliente" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-200">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-        <h3 class="text-lg font-bold text-slate-900">Cadastrar Novo Cliente</h3>
+  <div id="modal-cliente" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-2xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Cadastrar Novo Cliente</h3>
         <button onclick="fecharModal('modal-cliente')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form onsubmit="salvarNovoCliente(event)" class="mt-4 space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Nome Completo *</label>
-          <input type="text" id="cli-nome" required placeholder="Nome do cliente" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none">
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nome Completo *</label>
+          <input type="text" id="cli-nome" required placeholder="Nome do cliente" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">CPF / Documento *</label>
-            <input type="text" id="cli-doc" required placeholder="000.000.000-00" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none font-mono">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">CPF / Documento *</label>
+            <input type="text" id="cli-doc" required placeholder="000.000.000-00" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none font-mono">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Telefone *</label>
-            <input type="text" id="cli-tel" required placeholder="(00) 00000-0000" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Telefone *</label>
+            <input type="text" id="cli-tel" required placeholder="(00) 00000-0000" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none">
           </div>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">E-mail</label>
-          <input type="email" id="cli-email" placeholder="cliente@email.com" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none">
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">E-mail</label>
+          <input type="email" id="cli-email" placeholder="cliente@email.com" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">Cidade</label>
-            <input type="text" id="cli-cidade" placeholder="Cidade" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Cidade</label>
+            <input type="text" id="cli-cidade" placeholder="Cidade" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 uppercase mb-1">UF</label>
-            <input type="text" id="cli-uf" maxlength="2" placeholder="UF" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm focus:border-[#F37338] outline-none uppercase font-mono">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">UF</label>
+            <input type="text" id="cli-uf" maxlength="2" placeholder="UF" class="w-full rounded-xl border border-slate-300 dark:border-slate-700 dark:bg-slate-800 px-3 py-2 text-sm focus:border-brand outline-none uppercase font-mono">
           </div>
         </div>
-        <div class="flex justify-end gap-2 pt-4 border-t border-slate-100">
-          <button type="button" onclick="fecharModal('modal-cliente')" class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-xl">Cancelar</button>
-          <button type="submit" class="btn-primary px-5 py-2 text-sm rounded-xl">Salvar Cliente</button>
+        <div class="flex justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+          <button type="button" onclick="fecharModal('modal-cliente')" class="px-4 py-2 text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">Cancelar</button>
+          <button type="submit" class="bg-brand hover:bg-brand-hover text-slate-950 font-bold px-5 py-2 text-xs rounded-xl">Salvar Cliente</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- ÁREA DE IMPRESSÃO DA OS (PADRÃO COM CPF DO EMITENTE) -->
+  <!-- ======================================================== -->
+  <!-- ÁREA DE IMPRESSÃO DA OS (PADRÃO OFICIAL COM CPF EMITENTE) -->
+  <!-- ======================================================== -->
   <div id="area-impressao" class="hidden">
-    <div class="max-w-4xl mx-auto border-2 border-slate-800 p-6 rounded-lg font-sans text-slate-900">
+    <div class="max-w-4xl mx-auto border-2 border-slate-800 p-6 rounded font-sans text-slate-900 bg-white">
+      
       <!-- Cabeçalho Emitente -->
       <div class="flex justify-between items-start border-b-2 border-slate-800 pb-4 mb-4">
         <div>
-          <h2 id="print-emitente-nome" class="text-2xl font-black uppercase text-slate-900">NOME DO EMITENTE</h2>
+          <h2 id="print-emitente-nome" class="text-2xl font-black uppercase text-slate-950">FELIPE MONTEIRO</h2>
           <p id="print-emitente-cpf" class="text-sm font-bold text-slate-800 mt-0.5 font-mono">CPF: 000.000.000-00</p>
-          <p id="print-emitente-endereco" class="text-xs text-slate-600 mt-1">Endereço do Emitente</p>
-          <p id="print-emitente-contato" class="text-xs text-slate-600">Telefone | E-mail</p>
+          <p id="print-emitente-endereco" class="text-xs text-slate-600 mt-1">Endereço do Prestador</p>
+          <p id="print-emitente-contato" class="text-xs text-slate-600">Tel: (00) 0000-0000 | E-mail: contato@mapos.com</p>
         </div>
         <div class="text-right">
           <div class="bg-slate-900 text-white px-4 py-2 rounded font-black text-xl font-mono" id="print-os-numero">
-            ORDEM DE SERVIÇO Nº 000
+            ORDEM DE SERVIÇO Nº 001
           </div>
           <p class="text-xs text-slate-500 mt-1">Emissão: <span id="print-data-emissao"></span></p>
           <p class="text-xs font-bold text-slate-800">Status: <span id="print-os-status">Aberto</span></p>
@@ -412,7 +645,7 @@
       <!-- Dados do Cliente -->
       <div class="bg-slate-100 p-3 rounded mb-4 text-xs">
         <h4 class="font-bold uppercase text-slate-700 mb-1 border-b border-slate-300 pb-0.5">DADOS DO CLIENTE</h4>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-2 gap-2 mt-1">
           <p><b>Nome:</b> <span id="print-cli-nome"></span></p>
           <p><b>Documento:</b> <span id="print-cli-doc"></span></p>
           <p><b>Telefone:</b> <span id="print-cli-tel"></span></p>
@@ -423,11 +656,11 @@
       <!-- Detalhes do Equipamento e Defeito -->
       <div class="space-y-3 mb-6 text-xs">
         <div class="border border-slate-300 p-3 rounded">
-          <h4 class="font-bold text-slate-800 uppercase mb-1">Equipamento / Produto</h4>
-          <p id="print-os-equipamento" class="text-sm"></p>
+          <h4 class="font-bold text-slate-800 uppercase mb-1">Equipamento / Descrição</h4>
+          <p id="print-os-equipamento" class="text-sm font-medium"></p>
         </div>
         <div class="border border-slate-300 p-3 rounded">
-          <h4 class="font-bold text-slate-800 uppercase mb-1">Defeito Reclamado / Observações</h4>
+          <h4 class="font-bold text-slate-800 uppercase mb-1">Defeito Informado / Laudo</h4>
           <p id="print-os-defeito" class="text-sm text-slate-700"></p>
         </div>
       </div>
@@ -444,21 +677,17 @@
       <div class="grid grid-cols-2 gap-8 text-center text-xs mt-12 pt-6">
         <div>
           <div class="border-t border-slate-600 mx-8"></div>
-          <p class="mt-2 font-bold uppercase" id="print-ass-emitente">ASSINATURA DO PRESTADOR</p>
+          <p class="mt-2 font-bold uppercase" id="print-ass-emitente">FELIPE MONTEIRO</p>
           <p class="text-[10px] text-slate-500 font-mono" id="print-ass-emitente-cpf">CPF: 000.000.000-00</p>
         </div>
         <div>
           <div class="border-t border-slate-600 mx-8"></div>
           <p class="mt-2 font-bold uppercase">ASSINATURA DO CLIENTE</p>
-          <p class="text-[10px] text-slate-500">De acordo com o orçamento e serviço prestado</p>
+          <p class="text-[10px] text-slate-500">De acordo com as condições descritas nesta OS</p>
         </div>
       </div>
     </div>
   </div>
-
-  <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500">
-    <p>Map-OS v5.3.0 Web • Executando no GitHub Pages integrado ao Supabase BaaS (PostgreSQL)</p>
-  </footer>
 
   <script src="app.js"></script>
 </body>
